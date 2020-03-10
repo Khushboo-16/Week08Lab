@@ -7,18 +7,24 @@ package servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import services.AccountService;
+import services.UserService;
 
 /**
  *
  * @author awarsyle
  */
 public class LoginServlet extends HttpServlet {
+    
+    private static final int ADMIN_ROLE = 1;
+    private static final int REGULAR_ROLE = 2;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -39,10 +45,23 @@ public class LoginServlet extends HttpServlet {
         
         
         AccountService ac = new AccountService();
+        UserService us = new UserService();
+        
         if (ac.login(username, password) != null) {
             HttpSession session = request.getSession();
             session.setAttribute("username", username);
-            response.sendRedirect("users");
+            
+            try {
+                int userRoleid = us.get(username).getRole().getRoleid();
+                
+                if(userRoleid == ADMIN_ROLE) {
+                    response.sendRedirect("users");
+                } else if (userRoleid == REGULAR_ROLE) {
+                    response.sendRedirect("home");
+                }
+            } catch (Exception ex) {
+                Logger.getLogger(LoginServlet.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             getServletContext().getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
         }
